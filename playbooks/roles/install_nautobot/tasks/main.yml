@@ -1,11 +1,3 @@
-- name: debug
-  debug:
-    var: ansible_user
-
-# - name: Return motd to registered var
-#   shell: useradd --system --shell /bin/bash --create-home --home-dir "{{ autobot_user_home }}" nautobot
-#   register: mymotd
-
 - name: Create the Nautobot System User
   ansible.builtin.user:
     name: nautobot
@@ -13,17 +5,45 @@
     create_home: True
     skeleton: "{{nautobot_user_home}}"
     shell: /bin/bash
-    groups: nautobot
+    groups: nautobot, sudo
     append: yes
   become: True
 
+- name: Create Virtual Environment
+  become: yes
+  become_user: nautobot
+  pip:
+    name: nautobot
+    virtualenv: /opt/nautobot
+    virtualenv_python: python"{{python_version}}"
 
-    # useradd --system --shell /bin/bash --create-home --home-dir "{{ autobot_user_home }}" nautobot
 
-# - name: Create the Virtual Environment
-#   become: yes
-#   become_user: nautobot
-#   ansible.builtin.command: python3 -m venv /opt/nautobot
+- name: Update Naubotbot .bashrc
+  become: yes
+  become_user: nautobot
+  ansible.builtin.lineinfile:
+    path: ~nautobot/.bashrc
+    line: export NAUTOBOT_ROOT=/opt/nautobot
+    state: present
+
+- name: install and upgrade nautobot
+  become: yes
+  become_user: nautobot
+  pip: 
+    name: nautobot
+    state: latest
+    virtualenv: /opt/nautobot
+
+- name: initialize your config
+  command: nautobot-server init
+  become: yes
+  become_user: nautobot
+  register: tmp_user
+
+- name: show user
+  debug:
+    var: tmp_user
+
 
 # - name: Update the Nautobot .bashrc
 #   become: yes
