@@ -66,9 +66,10 @@
   shell: "sudo -u postgres psql -c 'create database {{ db_name }};'"
   ignore_errors: yes
 
+# This is using default accounts because of the odd quotation mark requirements here andnot being able to get the postgresql to work
 - name: Create a new database user
   become: True
-  shell:  """sudo -u postgres psql -c "CREATE USER nautobot WITH PASSWORD 'insecure_password';""""
+  shell: sudo -u postgres psql -c "CREATE USER nautobot WITH PASSWORD 'password';"
   ignore_errors: yes
 
 - name: Update DB privlidges
@@ -77,34 +78,21 @@
   ignore_errors: yes
 
 
-# - name: Grant BG privs to nautobot DB
-#   postgresql_privs:
-#     database: nautobot
-#     state: present
-#     privs: ALL
-#     type: database
-#     schema: public
-#     roles: nautobot
-#     grant_option: yes
+- name: Prepare the Database
+  shell: "{{nautobot_user_home}}/.local/bin/nautobot-server migrate"
+  become: yes
+  become_user: nautobot
+
+- name: Create a Superuser
+  shell: "{{nautobot_user_home}}/.local/bin/nautobot-server createsuperuser"
+  become: yes
+  become_user: nautobot
 
 
-
-
-# - name: Prepare the Database
-#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server migrate"
-#   become: yes
-#   become_user: nautobot
-
-# - name: Create a Superuser
-#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server createsuperuser"
-#   become: yes
-#   become_user: nautobot
-
-
-# - name: Create Static Directories
-#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server collectstatic"
-#   become: yes
-#   become_user: nautobot
+- name: Create Static Directories
+  shell: "{{nautobot_user_home}}/.local/bin/nautobot-server collectstatic"
+  become: yes
+  become_user: nautobot
 
 - name: install requirements
   become: yes
