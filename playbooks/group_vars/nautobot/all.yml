@@ -1,2 +1,3 @@
 nautobot_user_home: /opt/nautobot
 python_version: "3.8"
+db_name: nautobot

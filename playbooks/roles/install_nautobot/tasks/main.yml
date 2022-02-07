@@ -1,48 +1,118 @@
-- name: Create the Nautobot System User
-  ansible.builtin.user:
-    name: nautobot
-    system: True
-    create_home: True
-    skeleton: "{{nautobot_user_home}}"
-    shell: /bin/bash
-    groups: nautobot, sudo
-    append: yes
+# - name: Install Pre-reqs
+#   become: True
+#   apt:
+#     pkg:
+#     - python3 
+#     - python3-pip 
+#     - python3-venv 
+#     - python3-dev 
+#     - redis-server
+#     - postgresql
+#     - postgresql-contrib
+#     - python3-psycopg2
+
+
+# - name: Create the Nautobot System User
+#   ansible.builtin.user:
+#     name: nautobot
+#     system: True
+#     create_home: True
+#     skeleton: "{{nautobot_user_home}}"
+#     shell: /bin/bash
+#     groups: nautobot, sudo
+#     append: yes
+#   become: True
+
+# - name: Create Virtual Environment
+#   become: yes
+#   become_user: nautobot
+#   pip:
+#     name: nautobot
+#     virtualenv: /opt/nautobot
+#     virtualenv_python: python"{{python_version}}"
+
+
+# - name: Update Naubotbot .bashrc
+#   become: yes
+#   become_user: nautobot
+#   ansible.builtin.lineinfile:
+#     path: ~nautobot/.bashrc
+#     line: export NAUTOBOT_ROOT="{{nautobot_user_home}}"
+#     state: present
+
+# - name: install and upgrade nautobot
+#   become: yes
+#   become_user: nautobot
+#   pip: 
+#     name: nautobot
+#     state: latest
+#     virtualenv: "{{nautobot_user_home}}"
+
+# - name: initialize your config
+#   shell: ~/.local/bin/nautobot-server init
+#   become: yes
+#   become_user: nautobot
+
+# - name: move over config file
+#   become: True
+#   template:
+#     src: "nautobot_config.py.j2"
+#     dest: "{{nautobot_user_home}}/nautobot_config.py"
+#     owner: nautobot
+#     mode: 0755
+
+- name: Create a new database with name "{{db_name}}"
   become: True
+  shell: "sudo -u postgres psql -c 'create database {{ db_name }};'"
+  ignore_errors: yes
 
-- name: Create Virtual Environment
-  become: yes
-  become_user: nautobot
-  pip:
-    name: nautobot
-    virtualenv: /opt/nautobot
-    virtualenv_python: python"{{python_version}}"
+- name: Create a new database user
+  become: True
+  shell:  """sudo -u postgres psql -c "CREATE USER nautobot WITH PASSWORD 'insecure_password';""""
+  ignore_errors: yes
+
+- name: Update DB privlidges
+  become: True
+  shell: "sudo -u postgres psql -c 'GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{DB_USER}};'"
+  ignore_errors: yes
 
 
-- name: Update Naubotbot .bashrc
-  become: yes
-  become_user: nautobot
-  ansible.builtin.lineinfile:
-    path: ~nautobot/.bashrc
-    line: export NAUTOBOT_ROOT=/opt/nautobot
-    state: present
+# - name: Grant BG privs to nautobot DB
+#   postgresql_privs:
+#     database: nautobot
+#     state: present
+#     privs: ALL
+#     type: database
+#     schema: public
+#     roles: nautobot
+#     grant_option: yes
 
-- name: install and upgrade nautobot
+
+
+
+# - name: Prepare the Database
+#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server migrate"
+#   become: yes
+#   become_user: nautobot
+
+# - name: Create a Superuser
+#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server createsuperuser"
+#   become: yes
+#   become_user: nautobot
+
+
+# - name: Create Static Directories
+#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server collectstatic"
+#   become: yes
+#   become_user: nautobot
+
+- name: install requirements
   become: yes
   become_user: nautobot
   pip: 
-    name: nautobot
-    state: latest
-    virtualenv: /opt/nautobot
+    requirements: ~/local_requirements.txt
+    virtualenv: "{{nautobot_user_home}}"
 
-- name: initialize your config
-  command: nautobot-server init
-  become: yes
-  become_user: nautobot
-  register: tmp_user
-
-- name: show user
-  debug:
-    var: tmp_user
 
 
 # - name: Update the Nautobot .bashrc
