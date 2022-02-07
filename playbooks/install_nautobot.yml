@@ -1,0 +1,9 @@
+---
+- hosts: nautobot
+  vars_files:
+    - vaults/nautobot.yml
+  
+  tasks:
+    - name: Install Nautobot
+      include_role:
+        name: install_nautobot
