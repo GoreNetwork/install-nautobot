@@ -1,0 +1,29 @@
+- name: Add Nautobot System User
+  become: yes
+  ansible.builtin.command: useradd --system --shell /bin/bash --create-home --home-dir {{n autobot_user_home }} nautobot
+
+- name: Create the Virtual Environment
+  become: yes
+  become_user: nautobot
+  ansible.builtin.command: python3 -m venv /opt/nautobot
+
+- name: Update the Nautobot .bashrc
+  become: yes
+  ansible.builtin.command: echo "export NAUTOBOT_ROOT=/opt/nautobot" | tee -a ~nautobot/.bashrc  
+
+- name: Debug which pip
+  debug:
+    ansible.builtin.command: which pip3
+
+
+
+
+
+      # - name: ensure apache is at the latest version
+      #   yum:
+      #     name: httpd
+      #     state: latest
+      # - name: ensure apache is running
+      #   service:
+      #     name: httpd
+      #     state: started
