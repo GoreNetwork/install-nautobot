@@ -1,3 +1,14 @@
+# - name: Update all packages to their latest version
+#   become: True
+#   apt:
+#     name: "*"
+#     state: latest
+
+# - name: apt-upgrade
+#   apt:
+#     upgrade: yes
+
+
 # - name: Install Pre-reqs
 #   become: True
 #   apt:
@@ -17,20 +28,11 @@
 #     name: nautobot
 #     system: True
 #     create_home: True
-#     skeleton: "{{nautobot_user_home}}"
+#     home: "{{nautobot_user_home}}"
 #     shell: /bin/bash
-#     groups: nautobot, sudo
+#     groups: sudo
 #     append: yes
 #   become: True
-
-# - name: Create Virtual Environment
-#   become: yes
-#   become_user: nautobot
-#   pip:
-#     name: nautobot
-#     virtualenv: /opt/nautobot
-#     virtualenv_python: python"{{python_version}}"
-
 
 # - name: Update Naubotbot .bashrc
 #   become: yes
@@ -40,13 +42,18 @@
 #     line: export NAUTOBOT_ROOT="{{nautobot_user_home}}"
 #     state: present
 
+# - name: Create Virtual Environment
+#   become: yes
+#   become_user: nautobot
+#   shell: "python3 -m venv {{nautobot_user_home}}"
+
 # - name: install and upgrade nautobot
 #   become: yes
 #   become_user: nautobot
 #   pip: 
 #     name: nautobot
 #     state: latest
-#     virtualenv: "{{nautobot_user_home}}"
+    
 
 # - name: initialize your config
 #   shell: ~/.local/bin/nautobot-server init
@@ -55,27 +62,28 @@
 
 # - name: move over config file
 #   become: True
+#   become_user: nautobot
 #   template:
 #     src: "nautobot_config.py.j2"
-#     dest: "{{nautobot_user_home}}/nautobot_config.py"
+#     dest: "~/nautobot_config.py"
 #     owner: nautobot
 #     mode: 0755
 
-- name: Create a new database with name "{{db_name}}"
-  become: True
-  shell: "sudo -u postgres psql -c 'create database {{ db_name }};'"
-  ignore_errors: yes
+# - name: Create a new database with name "{{db_name}}"
+#   become: True
+#   shell: "sudo -u postgres psql -c 'create database {{ db_name }};'"
+#   ignore_errors: yes
 
-# This is using default accounts because of the odd quotation mark requirements here andnot being able to get the postgresql to work
-- name: Create a new database user
-  become: True
-  shell: sudo -u postgres psql -c "CREATE USER nautobot WITH PASSWORD 'password';"
-  ignore_errors: yes
+# # This is using default accounts because of the odd quotation mark requirements here andnot being able to get the postgresql to work
+# - name: Create a new database user
+#   become: True
+#   shell: sudo -u postgres psql -c "CREATE USER nautobot WITH PASSWORD 'password';"
+#   ignore_errors: yes
 
-- name: Update DB privlidges
-  become: True
-  shell: "sudo -u postgres psql -c 'GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{DB_USER}};'"
-  ignore_errors: yes
+# - name: Update DB privlidges
+#   become: True
+#   shell: "sudo -u postgres psql -c 'GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{DB_USER}};'"
+#   ignore_errors: yes
 
 
 - name: Prepare the Database
