@@ -65,8 +65,8 @@
   become_user: nautobot
   template:
     src: "nautobot_config.py.j2"
-    dest: "~/nautobot_config.py"
-    owner: nautobot
+    dest: "~/.nautobot/nautobot_config.py"
+    # owner: nautobot
     mode: 0755
 
 - name: Create a new database with name "{{db_name}}"
@@ -87,7 +87,7 @@
 
 
 - name: Prepare the Database
-  command: /opt/nautobot/.local/bin/nautobot-server migrate
+  shell: export PATH=/opt/nautobot/.local/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server migrate
   become: yes
   become_user: nautobot
   register: output
