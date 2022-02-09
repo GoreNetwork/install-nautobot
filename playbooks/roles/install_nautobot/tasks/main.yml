@@ -98,10 +98,10 @@
     var: output
 
 
-# - name: Create a Superuser
-#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server createsuperuser"
-#   become: yes
-#   become_user: nautobot
+- name: Create a Superuser
+  shell: "{{nautobot_user_home}}/.local/bin/nautobot-server createsuperuser"
+  become: yes
+  become_user: nautobot
 
 
 # - name: Create Static Directories
