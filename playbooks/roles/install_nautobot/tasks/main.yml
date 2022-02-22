@@ -69,6 +69,16 @@
     # owner: nautobot
     mode: 0755
 
+- name: move over config file2
+  become: True
+  become_user: nautobot
+  template:
+    src: "nautobot_config.py.j2"
+    dest: "~/nautobot_config.py"
+    # owner: nautobot
+    mode: 0755
+
+
 - name: Create a new database with name "{{db_name}}"
   become: True
   shell: "sudo -u postgres psql -c 'create database {{ db_name }};'"
@@ -90,31 +100,101 @@
   shell: export PATH=/opt/nautobot/.local/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server migrate
   become: yes
   become_user: nautobot
-  register: output
   ignore_errors: yes
 
-- name: debug
+- name: Create a Superuser
+  ansible.builtin.expect:
+    command: /bin/bash -c "export PATH=/opt/nautobot/.local/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server createsuperuser"
+    responses:
+      Username: dhimes
+      Email address: dhimes@gmail.com
+      Password: password
+      Password (again): password
+  become: yes
+  become_user: nautobot
+  register: output
+
+
+- name: Create Static Directories
+  shell: "export PATH=/opt/nautobot/.local/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server collectstatic"
+  become: yes
+  become_user: nautobot
+  register: output
+- name: debug1
+  debug:
+    var: output
+
+- name: Test app
+  shell: "export PATH=/opt/nautobot/.local/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server check"
+  become: yes
+  become_user: nautobot
+  register: output
+
+- name: debug1
   debug:
     var: output
 
 
-- name: Create a Superuser
-  shell: "{{nautobot_user_home}}/.local/bin/nautobot-server createsuperuser"
-  become: yes
-  become_user: nautobot
-
-
-# - name: Create Static Directories
-#   shell: "{{nautobot_user_home}}/.local/bin/nautobot-server collectstatic"
-#   become: yes
+# - name: move over uWSGI info file
+#   become: True
 #   become_user: nautobot
+#   template:
+#     src: "uwsgi.ini.j2"
+#     dest: "~/uwsgi.ini"
+#     owner: nautobot
+#     mode: 0755
 
-# - name: install requirements
-#   become: yes
-#   become_user: nautobot
-#   pip: 
-#     requirements: ~/local_requirements.txt
-#     virtualenv: "{{nautobot_user_home}}"
+
+# - name: move over Nautobot systemd info file
+#   become: True
+#   template:
+#     src: "nautobot.service.j2"
+#     dest: "/etc/systemd/system/nautobot.service"
+#     owner: nautobot
+#     mode: 0755
+
+# - name: move over Celery Worker systemd info file
+#   become: True
+#   template:
+#     src: "nautobot-worker.service.j2"
+#     dest: "/etc/systemd/system/nautobot-worker.service"
+#     owner: nautobot
+#     mode: 0755
+
+# - name: move over Celery Worker systemd info file
+#   become: True
+#   template:
+#     src: "nautobot-scheduler.service.j2"
+#     dest: "/etc/systemd/system/nautobot-scheduler.service"
+#     owner: nautobot
+#     mode: 0755
+
+
+# - name: Just force systemd to reread configs
+#   ansible.builtin.systemd:
+#     daemon_reload: yes
+#   become: True
+
+# - name: Enable service nautobot
+#   ansible.builtin.systemd:
+#     name: nautobot
+#     state: started
+#     enabled: yes
+#   become: True
+
+# - name: Enable service nautobot-worker
+#   ansible.builtin.systemd:
+#     name: nautobot-worker
+#     state: started
+#     enabled: yes
+#   become: True
+
+# - name: Enable service nautobot-scheduler
+#   ansible.builtin.systemd:
+#     name: nautobot-scheduler
+#     state: started
+#     enabled: yes
+#   become: True
 
 ##############################################################################
 
