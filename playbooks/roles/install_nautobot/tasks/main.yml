@@ -9,259 +9,281 @@
 #     upgrade: yes
 
 # https://nautobot.readthedocs.io/en/stable/installation/
-- name: Install Pre-reqs
-  become: True
-  apt:
-    pkg:
-    - python3 
-    - python3-pip 
-    - python3-venv 
-    - python3-dev 
-    - redis-server
-    - postgresql
-    - postgresql-contrib
-    - python3-psycopg2
-    - git
-    - vim
-    - nginx
+# - name: Install Pre-reqs
+#   become: True
+#   apt:
+#     pkg:
+#     - python3 
+#     - python3-pip 
+#     - python3-venv 
+#     - python3-dev 
+#     - redis-server
+#     - postgresql
+#     - postgresql-contrib
+#     - python3-psycopg2
+#     - git
+#     - vim
+#     - nginx
 
-# # https://nautobot.readthedocs.io/en/stable/installation/nautobot/
-- name: Create the Nautobot System User
-  ansible.builtin.user:
-    name: nautobot
-    system: True
-    create_home: True
-    home: "{{nautobot_user_home}}"
-    shell: /bin/bash
-    groups: sudo
-    append: yes
-  become: True
+# # # https://nautobot.readthedocs.io/en/stable/installation/nautobot/
+# - name: Create the Nautobot System User
+#   ansible.builtin.user:
+#     name: nautobot
+#     system: True
+#     create_home: True
+#     home: "{{nautobot_user_home}}"
+#     shell: /bin/bash
+#     groups: sudo
+#     append: yes
+#   become: True
 
-- name: Update Naubotbot .bashrc
-  become: yes
-  become_user: nautobot
-  ansible.builtin.lineinfile:
-    path: ~nautobot/.bashrc
-    line: export NAUTOBOT_ROOT="{{nautobot_user_home}}"
-    state: present
+# - name: Update Naubotbot .bashrc
+#   become: yes
+#   become_user: nautobot
+#   ansible.builtin.lineinfile:
+#     path: ~nautobot/.bashrc
+#     line: export NAUTOBOT_ROOT="{{nautobot_user_home}}"
+#     state: present
 
-- name: Create Virtual Environment
-  become: yes
-  become_user: nautobot
-  shell: "python3 -m venv {{nautobot_user_home}}"
+# - name: Create Virtual Environment
+#   become: yes
+#   become_user: nautobot
+#   shell: "python3 -m venv {{nautobot_user_home}}"
 
-- name: Update the Nautobot .bashrc
-  become: yes
-  shell: echo "export NAUTOBOT_ROOT=/opt/nautobot" | tee -a ~nautobot/.bashrc  
-
-
-- name: fix markupsafe
-  become: yes
-  become_user: nautobot
-  pip: 
-    name: markupsafe==2.0.1
+# - name: Update the Nautobot .bashrc
+#   become: yes
+#   shell: echo "export NAUTOBOT_ROOT=/opt/nautobot" | tee -a ~nautobot/.bashrc  
 
 
-- name: install and upgrade nautobot
-  become: yes
-  become_user: nautobot
-  pip: 
-    name: nautobot
-    state: latest
-    virtualenv: "{{nautobot_user_home}}"
+# - name: fix markupsafe
+#   become: yes
+#   become_user: nautobot
+#   pip: 
+#     name: markupsafe==2.0.1
+
+
+# - name: install and upgrade nautobot
+#   become: yes
+#   become_user: nautobot
+#   pip: 
+#     name: nautobot
+#     state: latest
+#     virtualenv: "{{nautobot_user_home}}"
     
 
-- name: initialize your config
-  shell: /opt/nautobot/bin/nautobot-server init
-  become: yes
-  become_user: nautobot
+# - name: initialize your config
+#   shell: /opt/nautobot/bin/nautobot-server init
+#   become: yes
+#   become_user: nautobot
 
-- name: move over config file
-  become: True
-  become_user: nautobot
-  template:
-    src: "nautobot_config.py.j2"
-    dest: "~/.nautobot/nautobot_config.py"
-    # owner: nautobot
-    mode: 0755
+# - name: move over config file
+#   become: True
+#   become_user: nautobot
+#   template:
+#     src: "nautobot_config.py.j2"
+#     dest: "~/.nautobot/nautobot_config.py"
+#     # owner: nautobot
+#     mode: 0755
 
-- name: move over config file2
-  become: True
-  become_user: nautobot
-  template:
-    src: "nautobot_config.py.j2"
-    dest: "~/nautobot_config.py"
-    # owner: nautobot
-    mode: 0755
-
-
-- name: Create a new database with name "{{db_name}}"
-  become: True
-  shell: "sudo -u postgres psql -c 'create database {{ db_name }};'"
-  ignore_errors: yes
-
-# This is using default accounts because of the odd quotation mark requirements here andnot being able to get the postgresql to work
-- name: Create a new database user
-  become: True
-  shell: sudo -u postgres psql -c "CREATE USER nautobot WITH PASSWORD 'password';"
-  ignore_errors: yes
-
-- name: Update DB privlidges
-  become: True
-  shell: "sudo -u postgres psql -c 'GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{DB_USER}};'"
-  ignore_errors: yes
+# - name: move over config file2
+#   become: True
+#   become_user: nautobot
+#   template:
+#     src: "nautobot_config.py.j2"
+#     dest: "~/nautobot_config.py"
+#     # owner: nautobot
+#     mode: 0755
 
 
-- name: Prepare the Database
-  shell: export PATH=/opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server migrate
-  become: yes
-  become_user: nautobot
-  ignore_errors: yes
+# - name: Create a new database with name "{{db_name}}"
+#   become: True
+#   shell: "sudo -u postgres psql -c 'create database {{ db_name }};'"
+#   ignore_errors: yes
 
-- name: Create a Superuser
-  ansible.builtin.expect:
-    command: /bin/bash -c "export PATH=/opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server createsuperuser"
-    responses:
-      Username: dhimes
-      Email address: dhimes@gmail.com
-      Password: password
-      Password (again): password
-  become: yes
-  become_user: nautobot
-  register: output
+# # This is using default accounts because of the odd quotation mark requirements here andnot being able to get the postgresql to work
+# - name: Create a new database user
+#   become: True
+#   shell: sudo -u postgres psql -c "CREATE USER nautobot WITH PASSWORD 'password';"
+#   ignore_errors: yes
+
+# - name: Update DB privlidges
+#   become: True
+#   shell: "sudo -u postgres psql -c 'GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{DB_USER}};'"
+#   ignore_errors: yes
 
 
-- name: Create Static Directories
-  shell: "export PATH=/opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server collectstatic"
-  become: yes
-  become_user: nautobot
-  register: output
-- name: debug1
-  debug:
-    var: output
+# - name: Prepare the Database
+#   shell: "nautobot-server migrate"
+#   environment: 
+#     PATH:  /opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+#   become: yes
+#   become_user: nautobot
+#   ignore_errors: yes
 
-- name: Test app
-  shell: "export PATH=/opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && echo $PATH && nautobot-server check"
-  become: yes
-  become_user: nautobot
-  register: output
+# - name: Create a Superuser
+#   ansible.builtin.expect:
+#     command: "nautobot-server createsuperuser"
+#     responses:
+#       Username: dhimes
+#       Email address: dhimes@gmail.com
+#       Password: password
+#       Password (again): password
+#   become: yes
+#   become_user: nautobot
+#   register: output
+#   environment: 
+#     PATH:  /opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+  
 
+# - name: Create Static Directories
+#   shell: "nautobot-server collectstatic"
+#   environment: 
+#     PATH:  /opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+  
+#   become: yes
+#   become_user: nautobot
+#   register: output
+# - name: debug1
+#   debug:
+#     var: output
 
-
-# https://nautobot.readthedocs.io/en/stable/installation/services/
-- name: move over uWSGI info file
-  become: True
-  become_user: nautobot
-  template:
-    src: "uwsgi.ini.j2"
-    dest: "~/uwsgi.ini"
-    owner: nautobot
-    mode: 0755
-
-
-- name: move over Nautobot systemd info file
-  become: True
-  template:
-    src: "nautobot.service.j2"
-    dest: "/etc/systemd/system/nautobot.service"
-    owner: nautobot
-    mode: 0755
-
-- name: move over Celery Worker systemd info file
-  become: True
-  template:
-    src: "nautobot-worker.service.j2"
-    dest: "/etc/systemd/system/nautobot-worker.service"
-    owner: nautobot
-    mode: 0755
-
-- name: move over Celery Worker systemd info file
-  become: True
-  template:
-    src: "nautobot-scheduler.service.j2"
-    dest: "/etc/systemd/system/nautobot-scheduler.service"
-    owner: nautobot
-    mode: 0755
+# - name: Test app
+#   shell: "nautobot-server check"
+#   become: yes
+#   become_user: nautobot
+#   register: output
+#   environment: 
+#     PATH:  /opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+  
 
 
-- name: Just force systemd to reread configs
-  ansible.builtin.systemd:
-    daemon_reload: yes
-  become: True
 
-- name: Enable service nautobot
-  ansible.builtin.systemd:
-    name: nautobot
-    state: started
-    enabled: yes
-  become: True
-
-- name: Enable service nautobot-worker
-  ansible.builtin.systemd:
-    name: nautobot-worker
-    state: started
-    enabled: yes
-  become: True
-
-- name: Enable service nautobot-scheduler
-  ansible.builtin.systemd:
-    name: nautobot-scheduler
-    state: started
-    enabled: yes
-  become: True
-
-# # # https://nautobot.readthedocs.io/en/stable/installation/http-server/
-# # # This uses Ubuntu so using /etc/ssl hard-coded... Take that sucker!!
-
-- name: Create Cert
-  become: True
-  ansible.builtin.expect:  
-    command: "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nautobot.key -out /etc/ssl/certs/nautobot.crt"
-    responses:
-      Country: US
-      Some: North Carolina
-      Locality: Raleigh
-      Organization: Joes Murder Hut
-      Organizational: Stabby land
-      Common: my_house
-      Email: bob@bob.bob
+# # https://nautobot.readthedocs.io/en/stable/installation/services/
+# - name: move over uWSGI info file
+#   become: True
+#   become_user: nautobot
+#   template:
+#     src: "uwsgi.ini.j2"
+#     dest: "~/uwsgi.ini"
+#     owner: nautobot
+#     mode: 0755
 
 
-- name: move over ngix config file
-  become: True
-  # become_user: nautobot
-  template:
-    src: "nautobot.conf.j2"
-    dest: "/etc/nginx/sites-available/nautobot.conf"
-    # would be /etc/nginx/conf.d/nautobot.conf if cent-os/RH
-    mode: 0755
-    owner: nautobot
+# - name: move over Nautobot systemd info file
+#   become: True
+#   template:
+#     src: "nautobot.service.j2"
+#     dest: "/etc/systemd/system/nautobot.service"
+#     owner: nautobot
+#     mode: 0755
+
+# - name: move over Celery Worker systemd info file
+#   become: True
+#   template:
+#     src: "nautobot-worker.service.j2"
+#     dest: "/etc/systemd/system/nautobot-worker.service"
+#     owner: nautobot
+#     mode: 0755
+
+# - name: move over Celery Worker systemd info file
+#   become: True
+#   template:
+#     src: "nautobot-scheduler.service.j2"
+#     dest: "/etc/systemd/system/nautobot-scheduler.service"
+#     owner: nautobot
+#     mode: 0755
 
 
-- name: remove file, and make a symbolic link to nautobot.conf from above
-  become: True
-  shell: '{{item}}'
-  with_items:
-    - rm -f /etc/nginx/sites-enabled/default
-    - ln -s /etc/nginx/sites-available/nautobot.conf /etc/nginx/sites-enabled/nautobot.conf
-  ignore_errors: yes
+# - name: Just force systemd to reread configs
+#   ansible.builtin.systemd:
+#     daemon_reload: yes
+#   become: True
 
-- name: restart ngix service
-  become: True
-  shell: systemctl restart nginx
+# - name: Enable service nautobot
+#   ansible.builtin.systemd:
+#     name: nautobot
+#     state: started
+#     enabled: yes
+#   become: True
 
-- name: update chomd for nautobot root
-  become: True
-  become_user: nautobot
-  shell: export PATH=/opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin && chmod 755 $NAUTOBOT_ROOT
-  ignore_errors: yes
+# - name: Enable service nautobot-worker
+#   ansible.builtin.systemd:
+#     name: nautobot-worker
+#     state: started
+#     enabled: yes
+#   become: True
 
+# - name: Enable service nautobot-scheduler
+#   ansible.builtin.systemd:
+#     name: nautobot-scheduler
+#     state: started
+#     enabled: yes
+#   become: True
+
+
+
+# # # # https://nautobot.readthedocs.io/en/stable/installation/http-server/
+# # # # This uses Ubuntu so using /etc/ssl hard-coded... Take that sucker!!
+# - name: Create Cert
+#   become: True
+#   ansible.builtin.expect:  
+#     command: "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nautobot.key -out /etc/ssl/certs/nautobot.crt"
+#     responses:
+#       Country: US
+#       Some: North Carolina
+#       Locality: Raleigh
+#       Organization: Joes Murder Hut
+#       Organizational: Stabby land
+#       Common: my_house
+#       Email: bob@bob.bob
+
+
+# - name: move over ngix config file
+#   become: True
+#   # become_user: nautobot
+#   template:
+#     src: "nautobot.conf.j2"
+#     dest: "/etc/nginx/sites-available/nautobot.conf"
+#     # would be /etc/nginx/conf.d/nautobot.conf if cent-os/RH
+#     mode: 0755
+#     owner: nautobot
+
+
+# - name: remove file, and make a symbolic link to nautobot.conf from above
+#   become: True
+#   shell: '{{item}}'
+#   with_items:
+#     - rm -f /etc/nginx/sites-enabled/default
+#     - ln -s /etc/nginx/sites-available/nautobot.conf /etc/nginx/sites-enabled/nautobot.conf
+#   ignore_errors: yes
+
+# - name: restart ngix service
+#   become: True
+#   shell: systemctl restart nginx
+
+
+
+# - name: update chomd for nautobot root
+#   become: True
+#   become_user: nautobot
+#   environment: 
+#     NAUTOBOT_ROOT: /opt/nautobot
+#     PATH:  /opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+#   shell: chmod 755 $NAUTOBOT_ROOT
+#   ignore_errors: yes
 
 - name: Start collector
   become: True
   become_user: nautobot
-  shell: /opt/nautobot/bin/nautobot-server collectstatic
+  shell: /opt/nautobot/bin/nautobot-server collectstatic --noinput
+  environment: 
+    NAUTOBOT_ROOT: /opt/nautobot
+    PATH: PATH=/opt/nautobot/bin:/opt/nautobot/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+  register: output
 
+- name: show output
+  debug:
+    var: output
 
 
 
